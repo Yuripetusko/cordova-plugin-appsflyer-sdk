@@ -13,25 +13,25 @@ static NSString *const SUCCESS         = @"Success";
  NSString* mConversionListenerOnResume;
  NSString* mInviteListener;
  BOOL isConversionData = NO;
-    
+
 - (void)pluginInitialize{}
 
 - (void)initSdk:(CDVInvokedUrlCommand*)command
 {
     NSDictionary* initSdkOptions = [command argumentAtIndex:0 withDefault:[NSNull null]];
-    
+
     NSString* devKey = nil;
     NSString* appId = nil;
     BOOL isDebug = NO;
-    
-    
+
+
     if (![initSdkOptions isKindOfClass:[NSNull class]]) {
-        
+
         id value = nil;
         id isConversionDataValue = nil;
         devKey = (NSString*)[initSdkOptions objectForKey: afDevKey];
         appId = (NSString*)[initSdkOptions objectForKey: afAppId];
-        
+
         value = [initSdkOptions objectForKey: afIsDebug];
         if ([value isKindOfClass:[NSNumber class]]) {
             isDebug = [(NSNumber*)value boolValue];
@@ -41,35 +41,35 @@ static NSString *const SUCCESS         = @"Success";
             isConversionData = [(NSNumber*)isConversionDataValue boolValue];
         }
     }
-    
+
     NSString* error = nil;
-    
+
     if (!devKey || [devKey isEqualToString:@""]) {
         error = NO_DEVKEY_FOUND;
     }
     else if (!appId || [appId isEqualToString:@""]) {
         error = NO_APPID_FOUND;
     }
-    
+
     if(error != nil){
         CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: error];
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         return;
     }
     else{
-        
+
         [AppsFlyerTracker sharedTracker].appleAppID = appId;
         [AppsFlyerTracker sharedTracker].appsFlyerDevKey = devKey;
         [AppsFlyerTracker sharedTracker].isDebug = isDebug;
         [[AppsFlyerTracker sharedTracker] trackAppLaunch];
 
-        
+
         if(isConversionData == YES){
           CDVPluginResult* pluginResult = nil;
           mConversionListener = command.callbackId;
-            
+
           [AppsFlyerTracker sharedTracker].delegate = self;
-         
+
           pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
           [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
         }
@@ -79,16 +79,16 @@ static NSString *const SUCCESS         = @"Success";
         }
     }
   }
-    
+
 - (void)resumeSDK:(CDVInvokedUrlCommand *)command
   {
       [[AppsFlyerTracker sharedTracker] trackAppLaunch];
-      
-      
+
+
       if (isConversionData == YES) {
           CDVPluginResult* pluginResult = nil;
           mConversionListenerOnResume = command.callbackId;
-          
+
           pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
           [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
       }
@@ -98,13 +98,13 @@ static NSString *const SUCCESS         = @"Success";
       }
   }
 
-    
+
 - (void)setCurrencyCode:(CDVInvokedUrlCommand*)command
 {
     if ([command.arguments count] == 0) {
         return;
     }
-    
+
     NSString* currencyId = [command.arguments objectAtIndex:0];
     [AppsFlyerTracker sharedTracker].currencyCode = currencyId;
 }
@@ -114,7 +114,7 @@ static NSString *const SUCCESS         = @"Success";
     if ([command.arguments count] == 0) {
         return;
     }
-    
+
     NSString* userId = [command.arguments objectAtIndex:0];
     [AppsFlyerTracker sharedTracker].customerUserID  = userId;
 }
@@ -124,7 +124,7 @@ static NSString *const SUCCESS         = @"Success";
     if ([command.arguments count] == 0) {
         return;
     }
-    
+
     BOOL isDisValueBool = NO;
     id isDisValue = nil;
     isDisValue = [command.arguments objectAtIndex:0];
@@ -149,7 +149,7 @@ static NSString *const SUCCESS         = @"Success";
     if ([command.arguments count] < 2) {
         return;
     }
-    
+
     NSString* eventName = [command.arguments objectAtIndex:0];
     NSString* eventValue = [command.arguments objectAtIndex:1];
     [[AppsFlyerTracker sharedTracker] trackEvent:eventName withValue:eventValue];
@@ -168,7 +168,7 @@ static NSString *const SUCCESS         = @"Success";
 
     NSData* token = [command.arguments objectAtIndex:0];
     NSString *deviceToken = [NSString stringWithFormat:@"%@",token];
-    
+
     if(deviceToken!=nil){
         [[AppsFlyerTracker sharedTracker] registerUninstall:token];
     }else{
@@ -177,7 +177,7 @@ static NSString *const SUCCESS         = @"Success";
 }
 
 //USER INVITES
-    
+
 - (void)setAppInviteOneLinkID:(CDVInvokedUrlCommand*)command {
     if ([command.arguments count] == 0) {
         return;
@@ -185,18 +185,18 @@ static NSString *const SUCCESS         = @"Success";
     NSString* oneLinkID = [command.arguments objectAtIndex:0];
     [AppsFlyerTracker sharedTracker].appInviteOneLinkID = oneLinkID;
 }
-    
+
 - (void)generateInviteLink:(CDVInvokedUrlCommand*)command {
     NSDictionary* inviteLinkOptions = [command argumentAtIndex:0 withDefault:[NSNull null]];
     NSDictionary* customParams = [command argumentAtIndex:1 withDefault:[NSNull null]];
-    
+
     NSString *channel = nil;
     NSString *campaign = nil;
     NSString *referrerName = nil;
     NSString *referrerImageUrl = nil;
     NSString *customerID = nil;
     NSString *baseDeepLink = nil;
-    
+
     if (![inviteLinkOptions isKindOfClass:[NSNull class]]) {
         channel = (NSString*)[inviteLinkOptions objectForKey: afUiChannel];
         campaign = (NSString*)[inviteLinkOptions objectForKey: afUiCampaign];
@@ -204,7 +204,7 @@ static NSString *const SUCCESS         = @"Success";
         referrerImageUrl = (NSString*)[inviteLinkOptions objectForKey: afUiImageUrl];
         customerID = (NSString*)[inviteLinkOptions objectForKey: afUiCustomerID];
         baseDeepLink = (NSString*)[inviteLinkOptions objectForKey: afUiBaseDeepLink];
-        
+
         [AppsFlyerShareInviteHelper generateInviteUrlWithLinkGenerator:^AppsFlyerLinkGenerator * _Nonnull(AppsFlyerLinkGenerator * _Nonnull generator) {
             if (channel != nil && ![channel isEqualToString:@""]) {
                 [generator setChannel:channel];
@@ -224,11 +224,11 @@ static NSString *const SUCCESS         = @"Success";
             if (baseDeepLink != nil && ![baseDeepLink isEqualToString:@""]) {
                 [generator setDeeplinkPath:baseDeepLink];
             }
-            
+
             if (![customParams isKindOfClass:[NSNull class]]) {
                     [generator addParameters:customParams];
             }
-            
+
             return generator;
         } completionHandler: ^(NSURL * _Nullable url) {
             mInviteListener = url.absoluteString;
@@ -237,31 +237,31 @@ static NSString *const SUCCESS         = @"Success";
                                                  resultWithStatus    : CDVCommandStatus_OK
                                                  messageAsString: mInviteListener
                                                  ];
-                
+
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
          }];
     }
 }
-    
+
 //CROSS PROMOTION
 -(void)trackCrossPromotionImpression:(CDVInvokedUrlCommand*) command {
-    
+
     if ([command.arguments count] == 0) {
         return;
     }
-    
+
     NSString* campaign = nil;
     NSString* promtAppID = [command.arguments objectAtIndex:0];
     campaign = [command.arguments objectAtIndex:1];
-    
+
     if (promtAppID != nil && ![promtAppID isEqualToString:@""]) {
         [AppsFlyerCrossPromotionHelper trackCrossPromoteImpression:promtAppID campaign:campaign];
     }
 }
 
 -(void)trackAndOpenStore:(CDVInvokedUrlCommand*) command {
-    
+
     if ([command.arguments count] == 0) {
         return;
     }
@@ -269,7 +269,7 @@ static NSString *const SUCCESS         = @"Success";
     NSString* promtAppID = [command.arguments objectAtIndex:0];
     NSString* campaign = [command.arguments objectAtIndex:1];
     NSDictionary* customParams = [command argumentAtIndex:2 withDefault:[NSNull null]];
-    
+
     if (promtAppID != nil && ![promtAppID isEqualToString:@""]) {
         [AppsFlyerShareInviteHelper generateInviteUrlWithLinkGenerator:^AppsFlyerLinkGenerator * _Nonnull(AppsFlyerLinkGenerator * _Nonnull generator) {
             if (campaign != nil && ![campaign isEqualToString:@""]) {
@@ -278,7 +278,7 @@ static NSString *const SUCCESS         = @"Success";
             if (![customParams isKindOfClass:[NSNull class]]) {
                 [generator addParameters:customParams];
             }
-            
+
             return generator;
         } completionHandler: ^(NSURL * _Nullable url) {
             NSString *appLink = url.absoluteString;
@@ -291,70 +291,70 @@ static NSString *const SUCCESS         = @"Success";
 }
 
 -(void)onConversionDataReceived:(NSDictionary*) installData {
-    
+
     NSDictionary* message = @{
                               @"status": afSuccess,
                               @"type": afOnInstallConversionDataLoaded,
                               @"data": installData
                               };
-    
+
     [self performSelectorOnMainThread:@selector(handleCallback:) withObject:message waitUntilDone:NO];
 }
 
 
 -(void)onConversionDataRequestFailure:(NSError *) _errorMessage {
-    
+
     NSDictionary* errorMessage = @{
                                    @"status": afFailure,
                                    @"type": afOnInstallConversionFailure,
                                    @"data": _errorMessage.localizedDescription
                                    };
-    
+
     [self performSelectorOnMainThread:@selector(handleCallback:) withObject:errorMessage waitUntilDone:NO];
 }
 
 
 - (void) onAppOpenAttribution:(NSDictionary*) attributionData {
-    
+
     NSDictionary* message = @{
                               @"status": afSuccess,
                               @"type": afOnAppOpenAttribution,
                               @"data": attributionData
                               };
-    
+
     [self performSelectorOnMainThread:@selector(handleCallback:) withObject:message waitUntilDone:NO];
 }
 
 - (void) onAppOpenAttributionFailure:(NSError *)_errorMessage {
-    
+
     NSDictionary* errorMessage = @{
                                    @"status": afFailure,
                                    @"type": afOnAttributionFailure,
                                    @"data": _errorMessage.localizedDescription
                                    };
-    
+
     [self performSelectorOnMainThread:@selector(handleCallback:) withObject:errorMessage waitUntilDone:NO];
 }
 
 
 -(void) handleCallback:(NSDictionary *) message{
     NSError *error;
-    
+
     NSData *jsonMessage = [NSJSONSerialization dataWithJSONObject:message
                                                           options:0
                                                             error:&error];
     if (jsonMessage) {
         NSString *jsonMessageStr = [[NSString alloc] initWithBytes:[jsonMessage bytes] length:[jsonMessage length] encoding:NSUTF8StringEncoding];
-        
+
         NSString* status = (NSString*)[message objectForKey: @"status"];
-        
+
         if([status isEqualToString:afSuccess]){
             [self reportOnSuccess:jsonMessageStr];
         }
         else{
             [self reportOnFailure:jsonMessageStr];
         }
-        
+
         NSLog(@"jsonMessageStr = %@",jsonMessageStr);
     } else {
         NSLog(@"%@",error);
@@ -362,36 +362,40 @@ static NSString *const SUCCESS         = @"Success";
 }
 
 -(void) reportOnFailure:(NSString *)errorMessage {
-    
+
     if (mConversionListenerOnResume != nil) {
-        mConversionListenerOnResume = nil;
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:errorMessage];
+        [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:mConversionListenerOnResume];
+
+        return;
     }
-    
+
     if(mConversionListener != nil){
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:errorMessage];
-        [pluginResult setKeepCallback:[NSNumber numberWithBool:NO]];
+        [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:mConversionListener];
-        
-        mConversionListener = nil;
+
+        return;
     }
 }
 
 -(void) reportOnSuccess:(NSString *)data {
-    
+
     if (mConversionListenerOnResume != nil) {
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:data];
-        [pluginResult setKeepCallback:[NSNumber numberWithBool:NO]];
+        [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:mConversionListenerOnResume];
-        
-        mConversionListenerOnResume = nil;
+
+        return;
     }
-    
-    if(mConversionListener != nil){
+
+    if (mConversionListener != nil) {
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:data];
-        [pluginResult setKeepCallback:[NSNumber numberWithBool:NO]];
+        [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:mConversionListener];
-       
-        mConversionListener = nil;
+
+        return;
      }
 }
 - (void) handleOpenUrl:(CDVInvokedUrlCommand*)command {
@@ -405,21 +409,20 @@ static NSString *const SUCCESS         = @"Success";
 @end
 
 
-// Universal Links Support - AppDelegate interface:
-@interface AppDelegate (AppsFlyerPlugin)
+// // Universal Links Support - AppDelegate interface:
+// @interface AppDelegate (AppsFlyerPlugin)
 
-- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray * _Nullable))restorationHandler;
+// - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray * _Nullable))restorationHandler;
 
-@end
+// @end
 
-// Universal Links Support - AppDelegate implementation:
-@implementation AppDelegate (AppsFlyerPlugin)
+// // Universal Links Support - AppDelegate implementation:
+// @implementation AppDelegate (AppsFlyerPlugin)
 
-- (BOOL) application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray *_Nullable))restorationHandler
-{
-    [[AppsFlyerTracker sharedTracker] continueUserActivity:userActivity restorationHandler:restorationHandler];
-    return YES;
-}
+// - (BOOL) application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray *_Nullable))restorationHandler
+// {
+//     [[AppsFlyerTracker sharedTracker] continueUserActivity:userActivity restorationHandler:restorationHandler];
+//     return YES;
+// }
 
-@end
-
+// @end
