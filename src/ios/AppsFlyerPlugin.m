@@ -416,7 +416,7 @@ static NSString *const SUCCESS         = @"Success";
             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:data];
             [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:mAttributionDataListener];
-            return
+            return;
         }
     }
     else if([type isEqualToString:afOnInstallConversionDataLoaded]){
