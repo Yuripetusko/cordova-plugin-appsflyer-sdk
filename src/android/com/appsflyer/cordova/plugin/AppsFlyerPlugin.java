@@ -21,6 +21,7 @@ import com.appsflyer.CreateOneLinkHttpTask;
 import com.appsflyer.share.CrossPromotionHelper;
 import com.appsflyer.share.LinkGenerator;
 import com.appsflyer.share.ShareInviteHelper;
+import com.appsflyer.AppsFlyerTrackingRequestListener;
 
 import android.app.Activity;
 import android.content.Context;
@@ -186,19 +187,40 @@ public class AppsFlyerPlugin extends CordovaPlugin {
 				gcdListener = registerConversionListener(instance);
 			}
 			else{
-				callbackContext.success(SUCCESS);
+				//callbackContext.success(SUCCESS);
 			}
 
 			instance.init(devKey, gcdListener, cordova.getActivity());
 
 			trackAppLaunch();
+
+
+            if (mConversionListener == null) {
+                instance.startTracking(c.getApplication(), devKey, new AppsFlyerTrackingRequestListener() {
+                    @Override
+                    public void onTrackingRequestSuccess() {
+                        callbackContext.success(SUCCESS);
+                    }
+
+                    @Override
+                    public void onTrackingRequestFailure(String s) {
+                        callbackContext.success(FAILURE);
+                    }
+                });
+            } else {
+                instance.startTracking(c.getApplication());
+            }
+
+
+
+
 			instance.startTracking(c.getApplication());
 
 			if(gcdListener != null){
 				sendPluginNoResult(callbackContext);
 			}
 			else{
-				callbackContext.success(SUCCESS);
+				//callbackContext.success(SUCCESS);
 			}
 		}
 		catch (JSONException e){
@@ -444,16 +466,21 @@ public class AppsFlyerPlugin extends CordovaPlugin {
 	}
 
 	private boolean updateServerUninstallToken(JSONArray parameters, CallbackContext callbackContext) {
-		String token = parameters.optString(0);
-		if (token != null && token.length() > 0) {
-			Context c = this.cordova.getActivity().getApplicationContext();
-			AppsFlyerLib.getInstance().updateServerUninstallToken(c,token);
-			callbackContext.success(SUCCESS);
-			return true;
-		}
-		else {
-			callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "Not a valid token"));
-		}
+		cordova.getThreadPool().execute(new Runnable() {
+			@Override
+			public void run() {
+				String token = parameters.optString(0);
+				if (token != null && token.length() > 0) {
+					Context c = cordova.getActivity().getApplicationContext();
+					AppsFlyerLib.getInstance().updateServerUninstallToken(c,token);
+					callbackContext.success(SUCCESS);
+				}
+				else {
+					callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, "Not a valid token"));
+				}
+			}
+		});
+
 		return true;
 	}
 
@@ -472,21 +499,9 @@ public class AppsFlyerPlugin extends CordovaPlugin {
 	}
 
     private boolean onResume(JSONArray parameters, CallbackContext callbackContext){
-        Intent intent = cordova.getActivity().getIntent();
-        newIntentURI = intent.getData();
-
-        if (newIntentURI != intentURI) {
-            if (mAttributionData != null) {
-                PluginResult r = new PluginResult(PluginResult.Status.OK, new JSONObject(mAttributionData).toString());
-                callbackContext.sendPluginResult(r);
-                mAttributionData = null;
-            } else {
-                mAttributionDataListener = callbackContext;
-                sendPluginNoResult(callbackContext);
-            }
-            
-            intentURI = newIntentURI;
-        }
+	if (mConversionListener == null) {
+		mConversionListener = callbackContext;
+	}
         return true;
     }
 
